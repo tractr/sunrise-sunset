@@ -24,7 +24,23 @@ Object.defineProperty(exports, '__esModule', { value: true });
 /**
  * Default zenith
  */
-const DEFAULT_ZENITH = 90.8333;
+const OFFICIAL_ZENITH = 90.8333;
+/**
+ * Civil zenith
+ */
+const CIVIL_ZENITH = 96;
+/**
+ * Nautical zenith
+ */
+const NAUTICAL_ZENITH = 102;
+/**
+ * Astronomical zenith
+ */
+const ASTRONOMICAL_ZENITH = 108;
+/**
+ * Default zenith
+ */
+const DEFAULT_ZENITH = OFFICIAL_ZENITH;
 /**
  * Degrees per hour
  */
@@ -33,6 +49,13 @@ const DEGREES_PER_HOUR = 360 / 24;
  * Msec in hour
  */
 const MSEC_IN_HOUR = 60 * 60 * 1000;
+/**
+ * Error when the sun never rises or sets
+ */
+class SunNeverRisesError extends Error {
+}
+class SunNeverSetsError extends Error {
+}
 /**
  * Get day of year
  */
@@ -43,55 +66,56 @@ function getDayOfYear(date) {
  * Get sin of value in deg
  */
 function sinDeg(deg) {
-    return Math.sin(deg * 2.0 * Math.PI / 360.0);
+    return Math.sin((deg * 2.0 * Math.PI) / 360.0);
 }
 /**
  * Get acos of value in deg
  */
 function acosDeg(x) {
-    return Math.acos(x) * 360.0 / (2 * Math.PI);
+    return (Math.acos(x) * 360.0) / (2 * Math.PI);
 }
 /**
  * Get asin of value in deg
  */
 function asinDeg(x) {
-    return Math.asin(x) * 360.0 / (2 * Math.PI);
+    return (Math.asin(x) * 360.0) / (2 * Math.PI);
 }
 /**
  * Get tan of value in deg
  */
 function tanDeg(deg) {
-    return Math.tan(deg * 2.0 * Math.PI / 360.0);
+    return Math.tan((deg * 2.0 * Math.PI) / 360.0);
 }
 /**
  * Get cos of value in deg
  */
 function cosDeg(deg) {
-    return Math.cos(deg * 2.0 * Math.PI / 360.0);
+    return Math.cos((deg * 2.0 * Math.PI) / 360.0);
 }
 /**
  * Get ramainder
  */
 function mod(a, b) {
     const result = a % b;
-    return result < 0
-        ? result + b
-        : result;
+    return result < 0 ? result + b : result;
 }
 /**
  * Calculate Date for either sunrise or sunset
  */
-function calculate(latitude, longitude, isSunrise, zenith, date) {
+function calculate(latitude, longitude, date, isSunrise, zenith = DEFAULT_ZENITH) {
     const dayOfYear = getDayOfYear(date);
     const hoursFromMeridian = longitude / DEGREES_PER_HOUR;
     const approxTimeOfEventInDays = isSunrise
-        ? dayOfYear + ((6 - hoursFromMeridian) / 24)
-        : dayOfYear + ((18.0 - hoursFromMeridian) / 24);
-    const sunMeanAnomaly = (0.9856 * approxTimeOfEventInDays) - 3.289;
-    const sunTrueLongitude = mod(sunMeanAnomaly + (1.916 * sinDeg(sunMeanAnomaly)) + (0.020 * sinDeg(2 * sunMeanAnomaly)) + 282.634, 360);
+        ? dayOfYear + (6 - hoursFromMeridian) / 24
+        : dayOfYear + (18.0 - hoursFromMeridian) / 24;
+    const sunMeanAnomaly = 0.9856 * approxTimeOfEventInDays - 3.289;
+    const sunTrueLongitude = mod(sunMeanAnomaly +
+        1.916 * sinDeg(sunMeanAnomaly) +
+        0.02 * sinDeg(2 * sunMeanAnomaly) +
+        282.634, 360);
     const ascension = 0.91764 * tanDeg(sunTrueLongitude);
     let rightAscension;
-    rightAscension = 360 / (2 * Math.PI) * Math.atan(ascension);
+    rightAscension = (360 / (2 * Math.PI)) * Math.atan(ascension);
     rightAscension = mod(rightAscension, 360);
     const lQuadrant = Math.floor(sunTrueLongitude / 90) * 90;
     const raQuadrant = Math.floor(rightAscension / 90) * 90;
@@ -99,29 +123,39 @@ function calculate(latitude, longitude, isSunrise, zenith, date) {
     rightAscension /= DEGREES_PER_HOUR;
     const sinDec = 0.39782 * sinDeg(sunTrueLongitude);
     const cosDec = cosDeg(asinDeg(sinDec));
-    const cosLocalHourAngle = ((cosDeg(zenith)) - (sinDec * (sinDeg(latitude)))) / (cosDec * (cosDeg(latitude)));
+    const cosLocalHourAngle = (cosDeg(zenith) - sinDec * sinDeg(latitude)) / (cosDec * cosDeg(latitude));
+    if (cosLocalHourAngle > 1)
+        throw new SunNeverRisesError("Sun is never rises for this location and specific date");
+    if (cosLocalHourAngle < -1)
+        throw new SunNeverSetsError("Sun is never sets for this location and specific date");
     const localHourAngle = isSunrise
         ? 360 - acosDeg(cosLocalHourAngle)
         : acosDeg(cosLocalHourAngle);
     const localHour = localHourAngle / DEGREES_PER_HOUR;
-    const localMeanTime = localHour + rightAscension - (0.06571 * approxTimeOfEventInDays) - 6.622;
-    const time = mod(localMeanTime - (longitude / DEGREES_PER_HOUR), 24);
+    const localMeanTime = localHour + rightAscension - 0.06571 * approxTimeOfEventInDays - 6.622;
+    const time = mod(localMeanTime - longitude / DEGREES_PER_HOUR, 24);
     const utcMidnight = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
     // Created date will be set to local (system) time zone.
-    return new Date(utcMidnight + (time * MSEC_IN_HOUR));
+    return new Date(utcMidnight + time * MSEC_IN_HOUR);
 }
 /**
  * Calculate Sunrise time for given longitude, latitude, zenith and date
  */
-function getSunrise(latitude, longitude, date = new Date()) {
-    return calculate(latitude, longitude, true, DEFAULT_ZENITH, date);
+function getSunrise(latitude, longitude, date = new Date(), zenith = DEFAULT_ZENITH) {
+    return calculate(latitude, longitude, date, true, zenith);
 }
 /**
  * Calculate Sunset time for given longitude, latitude, zenith and date
  */
-function getSunset(latitude, longitude, date = new Date()) {
-    return calculate(latitude, longitude, false, DEFAULT_ZENITH, date);
+function getSunset(latitude, longitude, date = new Date(), zenith = DEFAULT_ZENITH) {
+    return calculate(latitude, longitude, date, false, zenith);
 }
 
+exports.ASTRONOMICAL_ZENITH = ASTRONOMICAL_ZENITH;
+exports.CIVIL_ZENITH = CIVIL_ZENITH;
+exports.NAUTICAL_ZENITH = NAUTICAL_ZENITH;
+exports.OFFICIAL_ZENITH = OFFICIAL_ZENITH;
+exports.SunNeverRisesError = SunNeverRisesError;
+exports.SunNeverSetsError = SunNeverSetsError;
 exports.getSunrise = getSunrise;
 exports.getSunset = getSunset;

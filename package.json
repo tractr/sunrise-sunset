@@ -1,37 +1,7 @@
 {
-  "name": "sunrise-sunset-js",
+  "name": "@tractr/sunrise-sunset",
   "version": "2.2.1",
   "description": "Sunrise and sunset time calculation for given coordinates",
-  "main": "dist/index.js",
-  "directories": {
-    "test": "tests"
-  },
-  "devDependencies": {
-    "@babel/core": "7.12.9",
-    "@babel/preset-env": "7.12.7",
-    "@rollup/plugin-babel": "5.2.2",
-    "@rollup/plugin-commonjs": "17.0.0",
-    "@rollup/plugin-typescript": "8.0.0",
-    "babel-jest": "26.6.3",
-    "coveralls": "3.1.0",
-    "jest-cli": "26.6.3",
-    "pico-static-server": "3.0.3",
-    "rollup": "2.34.2",
-    "rollup-plugin-copy": "3.3.0",
-    "rollup-plugin-livereload": "2.0.0",
-    "rollup-plugin-terser": "7.0.2",
-    "rollup-watch": "4.3.1",
-    "tslib": "2.0.3",
-    "typescript": "4.1.2"
-  },
-  "scripts": {
-    "build": "rollup -c ./rollup.config.js",
-    "test": "jest"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://udivankin@github.com/udivankin/sunrise-sunset.git"
-  },
   "keywords": [
     "sunrise",
     "sunset",
@@ -40,20 +10,83 @@
     "day",
     "events"
   ],
+  "homepage": "https://github.com/tractr/sunrise-sunset#readme",
+  "bugs": {
+    "url": "https://github.com/tractr/sunrise-sunset/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:tractr/sunrise-sunset.git"
+  },
+  "license": "ISC",
   "author": {
     "name": "Aleksei Udivankin",
     "email": "allx@mail.ru",
     "url": "https://github.com/udivankin"
   },
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/udivankin/sunrise-sunset/issues"
+  "main": "dist/index.js",
+  "directories": {
+    "test": "tests"
   },
-  "homepage": "https://github.com/udivankin/sunrise-sunset#readme",
+  "scripts": {
+    "build": "rollup -c ./rollup.config.js",
+    "postinstall": "is-ci || husky install",
+    "lint": "eslint . --ext .js,.ts",
+    "prepublishOnly": "pinst --disable",
+    "postpublish": "pinst --enable",
+    "test": "jest"
+  },
+  "commitlint": {
+    "extends": [
+      "@tractr/commit-config"
+    ]
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "prettier": "@tractr/prettier-config",
+  "eslintConfig": {
+    "extends": "@tractr"
+  },
   "jest": {
     "cache": false,
     "transform": {
       "^.+\\.js$": "babel-jest"
     }
+  },
+  "devDependencies": {
+    "@babel/core": "7.12.9",
+    "@babel/preset-env": "7.12.7",
+    "@rollup/plugin-babel": "5.2.2",
+    "@rollup/plugin-commonjs": "17.0.0",
+    "@rollup/plugin-typescript": "8.0.0",
+    "@tractr/commit-config": "^1.0.0",
+    "@tractr/eslint-config": "^1.2.1",
+    "@tractr/prettier-config": "^1.2.2",
+    "@tractr/semantic-release-config": "^1.1.0",
+    "babel-jest": "26.6.3",
+    "coveralls": "3.1.0",
+    "husky": "^5.0.6",
+    "is-ci": "^2.0.0",
+    "jest-cli": "26.6.3",
+    "pico-static-server": "3.0.3",
+    "pinst": "^2.1.1",
+    "rollup": "2.34.2",
+    "rollup-plugin-copy": "3.3.0",
+    "rollup-plugin-livereload": "2.0.0",
+    "rollup-plugin-terser": "7.0.2",
+    "rollup-watch": "4.3.1",
+    "tslib": "2.0.3",
+    "typescript": "4.1.2"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "release": {
+    "extends": "@tractr/semantic-release-config",
+    "branch": "master"
   }
 }
