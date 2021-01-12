@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com:tractr/sunrise-sunset.git"
+    "url": "git+ssh://git@github.com/tractr/sunrise-sunset.git"
   },
   "license": "ISC",
   "author": {
